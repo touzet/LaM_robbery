@@ -186,8 +186,13 @@ def align_error(all_reads, all_genes):
         taux_de_couverture(list_of_aligned_reads, gene_seq)
         print("--------------------")
 
-all_genes = parse_fasta("../sequences_de_reference.txt")
-all_reads = parse_fasta("../lectures_de_sequencage.txt")
-align_match(all_reads, all_genes) 
-align_substitution(all_reads, all_genes)
-align_error(all_reads, all_genes)
+
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} genes reads")
+        sys.exit(1)
+    all_genes = parse_fasta(sys.argv[1])
+    all_reads = parse_fasta(sys.argv[2])
+    align_match(all_reads, all_genes)
+    align_substitution(all_reads, all_genes)
+    align_error(all_reads, all_genes)
