@@ -1,6 +1,15 @@
+from dataclasses import dataclass
+import sys
+
+@dataclass
+class Sequence:
+    name: str = ""
+    sequence: str = ""
+
 def parse_fasta(filename):
-    """Parse un fichier FASTA et retourne un dictionnaire {header: sequence}."""
-    sequences = {}
+    """Parse un fichier FASTA et retourne une liste de Sequence."""
+    sequences = []
+    current_sequence = Sequence()
     with open(filename, 'r') as f:
         header = None
         seq_lines = []
@@ -10,13 +19,16 @@ def parse_fasta(filename):
                 continue
             if line.startswith(">"):
                 if header is not None:
-                    sequences[header] = "".join(seq_lines)
+                    current_sequence.sequence = ''.join(seq_lines)
+                    sequences.append(current_sequence)
                 header = line[1:]
+                current_sequence = Sequence(name=header)
                 seq_lines = []
             else:
                 seq_lines.append(line)
         if header is not None:
-            sequences[header] = "".join(seq_lines)
+            current_sequence.sequence = ''.join(seq_lines)
+            sequences.append(current_sequence)
     return sequences
 
 def match(read, gene, start):
@@ -116,9 +128,9 @@ def align_match(all_reads, all_genes):
     for gene in all_genes:
         print(gene)
         list_of_aligned_reads=[]
-        gene_seq=all_genes[gene]
+        gene_seq=gene.sequence
         for read in all_reads:
-            read_seq=all_reads[read]
+            read_seq=read.sequence
             for start in range(0,len(gene_seq)-len(read_seq)+1):
                 found = match(read_seq, gene_seq, start)
                 if found:
@@ -136,9 +148,9 @@ def align_substitution(all_reads, all_genes):
     for gene in all_genes:
         print(gene)
         list_of_aligned_reads=[]
-        gene_seq=all_genes[gene]
+        gene_seq=gene.sequence
         for read in all_reads:
-            read_seq=all_reads[read]
+            read_seq=read.sequence
             for start in range(0,len(gene_seq)-len(read_seq)+1):
                 found, edit, pos = match_substitution(read_seq, gene_seq, start)
                 if found:
@@ -155,13 +167,13 @@ def align_error(all_reads, all_genes):
     for gene in all_genes:
         print(gene)
         list_of_aligned_reads=[]
-        gene_seq=all_genes[gene]
+        gene_seq=gene.sequence
         for read in all_reads:
-            read_seq=all_reads[read]
+            read_seq=read.sequence
             for start in range(0,len(gene_seq)-len(read_seq)+1):
                 found, edit, pos = match_error(read_seq,gene_seq,start)
                 if found:
-                    print(read + " " + edit)
+                    print(read.name + " " + edit)
                     print_match_error(read_seq,gene_seq, start, edit, pos)
                     print()
                     if edit=="match" or edit=="substitution":
