@@ -54,7 +54,7 @@ def latex_header(output_filehandle):
     \\dnafont
 \\setlength{\\parskip}{-1.1em}
   \\begin{tikzpicture}
-    \\matrix[matrix of nodes, column sep=0pt, row sep=4pt,
+    \\hspace*{2em}\\matrix[matrix of nodes, column sep=0pt, row sep=2pt,
     nodes={text width=.9em,inner sep=8pt, outer sep=0pt, node distance=0pt, font=\\sf, scale=1.2, text=white}]
     {"""
     print(latex_content, file=output_filehandle,end="")
@@ -92,7 +92,7 @@ def main():
     for inputfile in args.input:
         name = os.path.splitext(os.path.basename(inputfile))[0].replace('_', '~')
         all_sequences = parse_fasta(inputfile)
-        print(f"\n|[rotate=90,anchor=east,yshift=1.3em,xshift=-3em,overlay,text=black]| {name}\\\\[5pt]", file=f, end='')
+        print(f"\n|[rotate=90,anchor=east,yshift=2em,xshift=-3em,overlay,text=black]| {name}\\\\[5pt]", file=f, end='')
         reads = [seq for header, seq in all_sequences.items()]
         #print("\\textbf{\Large "+name+"}\\\\", file=f)
         save_split_genes_to_latex(reads, f)
