@@ -4,10 +4,10 @@ import sys
 @dataclass
 class Sequence:
     name: str = ""
-    sequence: str = ""
+    dna: str = ""
 
-def parse_fasta(filename):
-    """Parse un fichier FASTA et retourne une liste de Sequence."""
+def parse_sequences(filename):
+    """Lit un fichier de reads ou de genes et retourne une liste de Sequence."""
     sequences = []
     current_sequence = Sequence()
     with open(filename, 'r') as f:
@@ -19,7 +19,7 @@ def parse_fasta(filename):
                 continue
             if line.startswith(">"):
                 if header is not None:
-                    current_sequence.sequence = ''.join(seq_lines)
+                    current_sequence.dna = ''.join(seq_lines)
                     sequences.append(current_sequence)
                 header = line[1:]
                 current_sequence = Sequence(name=header)
@@ -27,11 +27,11 @@ def parse_fasta(filename):
             else:
                 seq_lines.append(line)
         if header is not None:
-            current_sequence.sequence = ''.join(seq_lines)
+            current_sequence.dna = ''.join(seq_lines)
             sequences.append(current_sequence)
     return sequences
 
-def match_seq(read, gene, start):
+def match_read(read, gene, start):
     i=0
     while  i<len(read) and read[i]==gene[i+start] :
         i=i+1
@@ -75,12 +75,12 @@ def match_error(read,gene,start):
     while i<len(read) and read[i]==gene[i+start] :
         i=i+1
     # insertion in the read
-    insertion, _, _ = match_seq(read[i+1:len(read)], gene, start+i)
+    insertion, _, _ = match_read(read[i+1:len(read)], gene, start+i)
     if insertion:
         return True, "insertion", i
     #deletion in the read
     if i>0 :
-        deletion, _, _ = match_seq(read[i:len(read)], gene, start+i+1)
+        deletion, _, _ = match_read(read[i:len(read)], gene, start+i+1)
         if deletion:
             return True, "deletion", i
     return False, "", 0
@@ -127,11 +127,11 @@ def align_match(all_reads, all_genes):
     for gene in all_genes:
         print(gene)
         list_of_aligned_reads=[]
-        gene_seq=gene.sequence
+        gene_seq=gene.dna
         for read in all_reads:
-            read_seq=read.sequence
+            read_seq=read.dna
             for start in range(0,len(gene_seq)-len(read_seq)+1):
-                found, edit, pos = match_seq(read_seq, gene_seq, start)
+                found, edit, pos = match_read(read_seq, gene_seq, start)
                 if found:
                     print(read)
                     print_match(read_seq,gene_seq, start)
@@ -147,11 +147,11 @@ def align_substitution(all_reads, all_genes):
     for gene in all_genes:
         print(gene)
         list_of_aligned_reads=[]
-        gene_seq=gene.sequence
+        gene_seq=gene.dna
         for read in all_reads:
-            read_seq=read.sequence
+            read_seq=read.dna
             for start in range(0,len(gene_seq)-len(read_seq)+1):
-                found, edit, pos = match_seq(read_seq, gene_seq, start)
+                found, edit, pos = match_read(read_seq, gene_seq, start)
                 if found:
                     break
             if not found:
@@ -173,12 +173,12 @@ def align_error(all_reads, all_genes):
     for gene in all_genes:
         print(gene)
         list_of_aligned_reads=[]
-        gene_seq=gene.sequence
+        gene_seq=gene.dna
         for read in all_reads:
-            read_seq=read.sequence
+            read_seq=read.dna
             found = False
             for start in range(0,len(gene_seq)-len(read_seq)+1):
-                found, edit, pos = match_seq(read_seq, gene_seq, start)
+                found, edit, pos = match_read(read_seq, gene_seq, start)
                 if found:
                     break
             if not found:
@@ -210,8 +210,8 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print(f"Usage: {sys.argv[0]} genes reads")
         sys.exit(1)
-    all_genes = parse_fasta(sys.argv[1])
-    all_reads = parse_fasta(sys.argv[2])
+    all_genes = parse_sequences(sys.argv[1])
+    all_reads = parse_sequences(sys.argv[2])
     align_match(all_reads, all_genes)
     align_substitution(all_reads, all_genes)
     align_error(all_reads, all_genes)
