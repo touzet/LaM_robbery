@@ -35,17 +35,18 @@ def match_read(read, gene, start):
     i=0
     while  i<len(read) and read[i]==gene[i+start] :
         i=i+1
-    return i==len(read), "exact", 0
+    return i==len(read)
 
 def print_match(read, gene, start):
-    print(read)
-    print('|'*len(read))
-    print(gene[start:start+len(read)])
-
+    read_length=len(read.dna)
+    print(read.name+ " " +str(start)+"-"+str(start+read_length-1))
+    print(read.dna)
+    print('|'*read_length)
+    print(gene[start:start+read_length])
 
 def match_substitution(read, gene, start):
     '''
-    La fonction ne gère que les cas ayant exactement une substitution.
+    La fonction ne gère que les cas ayant exactement une substitution
     '''
     i=0
     nb_substitutions=0
@@ -56,56 +57,51 @@ def match_substitution(read, gene, start):
             pos_substitution=i
         i=i+1
     if nb_substitutions==1:
-        return True, "substitution", pos_substitution
+        return True, pos_substitution
     else:
-        return False, "", 0
-
+        return False, 0
 
 def print_match_substitution(read,gene,start,pos):
-    print(read)
-    print("|"*pos+"."+"|"*(len(read)-pos-1))
-    print(gene[start:start+len(read)] )
+    read_length=len(read.dna)
+    print(read.name+ " "+str(start)+"-"+str(start+read_length-1))
+    print(read.dna)
+    print("|"*pos+"."+"|"*(read_length-pos-1))
+    print(gene[start:start+read_length] )
 
-
-def match_error(read,gene,start):
+def match_insertion(read,gene,start):
     '''
-    La fonction ne gère que les cas ayant exactement un indel
+    La fonction ne gère que les cas ayant exactement une insertion
     '''
     i=0
     while i<len(read) and read[i]==gene[i+start] :
         i=i+1
-    # insertion in the read
-    insertion, _, _ = match_read(read[i+1:len(read)], gene, start+i)
-    if insertion:
-        return True, "insertion", i
-    #deletion in the read
-    if i>0 :
-        deletion, _, _ = match_read(read[i:len(read)], gene, start+i+1)
-        if deletion:
-            return True, "deletion", i
-    return False, "", 0
-
+    insertion = match_read(read[i+1:len(read)], gene, start+i)
+    return insertion, i
+    
+def match_deletion(read,gene,start):
+    '''
+    La fonction ne gère que les cas ayant exactement une délétion
+    '''
+    i=0
+    while i<len(read) and read[i]==gene[i+start] :
+        i=i+1
+    deletion = match_read(read[i:len(read)], gene, start+i+1)
+    return deletion, i
 
 def print_match_insertion(read, gene, start, pos):
-    print(read)
-    print("|"*pos+" "+"|"*(len(read)-pos-1))
-    print(gene[start:start+pos]+"-"+gene[start+pos:start+len(read)-1])
+    read_length=len(read.dna)
+    print(read.name+" "+ str(start)+"-"+str(start+read_length-2))
+    print(read.dna)
+    print("|"*pos+" "+"|"*(read_length-pos-1))
+    print(gene[start:start+pos]+"-"+gene[start+pos:start+read_length-1])
 
 def print_match_deletion(read, gene, start, pos):
-    print(pos)
-    print(read[0:pos]+"-"+read[pos:len(read)])
-    print("|"*pos+" "+"|"*(len(read)-pos))
-    print(gene[start:start+len(read)+1]) 
-        
-def print_match_error(read, gene, start, edit, pos):
-    if edit=="match":
-        print_match(read, gene, start)
-    elif edit=="substitution":
-        print_match_substitution(read, gene, start, pos)
-    elif edit=="insertion":
-        print_match_insertion(read, gene, start, pos)
-    elif edit=="deletion":
-        print_match_deletion(read, gene, start, pos)
+    read_length=len(read.dna)
+    print(read.name+ " " + str(start)+"-"+str(start+read_length))
+    print(read.dna[0:pos]+"-"+read.dna[pos:read_length])
+    print("|"*pos+" "+"|"*(read_length-pos))
+    print(gene[start:start+read_length+1]) 
+          
         
 def taux_de_couverture(list_of_aligned_reads, gene):
     list_of_aligned_reads.sort(key=lambda x:x[1])
@@ -122,89 +118,44 @@ def taux_de_couverture(list_of_aligned_reads, gene):
     print("Taux de couverture: "+str(couverture/len(gene))+"\n")
 
 
-def align_match(all_reads, all_genes):
-    print("SANS ERREURS, SANS SUBSTITUTIONS")
+def align(all_reads, all_genes):
     for gene in all_genes:
-        print(gene)
-        list_of_aligned_reads=[]
-        gene_seq=gene.dna
-        for read in all_reads:
-            read_seq=read.dna
-            for start in range(0,len(gene_seq)-len(read_seq)+1):
-                found, edit, pos = match_read(read_seq, gene_seq, start)
-                if found:
-                    print(read)
-                    print_match(read_seq,gene_seq, start)
-                    print()
-                    list_of_aligned_reads.append((len(read_seq),start))
-                    break
-        taux_de_couverture(list_of_aligned_reads, gene_seq)
-        print("--------------------")
-
-
-def align_substitution(all_reads, all_genes):
-    print("SUBSTITUTIONS AUTORISEES")
-    for gene in all_genes:
-        print(gene)
-        list_of_aligned_reads=[]
-        gene_seq=gene.dna
-        for read in all_reads:
-            read_seq=read.dna
-            for start in range(0,len(gene_seq)-len(read_seq)+1):
-                found, edit, pos = match_read(read_seq, gene_seq, start)
-                if found:
-                    break
-            if not found:
-                for start in range(0,len(gene_seq)-len(read_seq)+1):
-                    found, edit, pos = match_substitution(read_seq, gene_seq, start)
-                    if found:
-                        break
-
-            if found:
-                print(read)
-                print_match_error(read_seq, gene_seq, start, edit, pos)
-                list_of_aligned_reads.append((len(read_seq),start))
-                print()
-        taux_de_couverture(list_of_aligned_reads, gene_seq)
-        print("--------------------")
-
-def align_error(all_reads, all_genes):
-    print("TOUTES ERREURS AUTORISEES")
-    for gene in all_genes:
-        print(gene)
+        print(gene.name)
         list_of_aligned_reads=[]
         gene_seq=gene.dna
         for read in all_reads:
             read_seq=read.dna
             found = False
             for start in range(0,len(gene_seq)-len(read_seq)+1):
-                found, edit, pos = match_read(read_seq, gene_seq, start)
+                found = match_read(read_seq, gene_seq, start)
                 if found:
+                    print_match(read,gene_seq, start)
+                    list_of_aligned_reads.append((len(read_seq),start))
                     break
             if not found:
                 for start in range(0,len(gene_seq)-len(read_seq)+1):
-                    found, edit, pos = match_substitution(read_seq, gene_seq, start)
+                    found, pos = match_substitution(read_seq, gene_seq, start)
                     if found:
+                        print_match_substitution(read,gene_seq, start, pos)
+                        list_of_aligned_reads.append((len(read_seq),start))
                         break
-                if not found:
-                    for start in range(0,len(gene_seq)-len(read_seq)+1):
-                        found, edit, pos = match_error(read_seq, gene_seq, start)
-                        if found:
-                            break
-
-            if found:
-                print(read.name + " " + edit+" "+str(pos))
-                print_match_error(read_seq,gene_seq, start, edit, pos)
-                print()
-                list_of_aligned_reads.append((len(read_seq),start))
-                if edit == "exact" or edit == "substitution":
-                    list_of_aligned_reads.append((len(read_seq),start))
-                elif edit=="insertion":
-                    list_of_aligned_reads.append((len(read_seq)-1,start))
-                else: # deletion
-                    list_of_aligned_reads.append((len(read_seq)+1,start))
+            if not found:
+                for start in range(0,len(gene_seq)-len(read_seq)+2):
+                    found, pos = match_insertion(read_seq, gene_seq, start)
+                    if found:
+                        print_match_insertion(read,gene_seq, start, pos)
+                        list_of_aligned_reads.append((len(read_seq)-1,start))
+                        break
+            if not found:
+                for start in range(0,len(gene_seq)-len(read_seq)):
+                    found, pos = match_deletion(read_seq, gene_seq, start)
+                    if found:
+                        print_match_deletion(read,gene_seq, start, pos)
+                        list_of_aligned_reads.append((len(read_seq)+1,start))
+                        break
+        
         taux_de_couverture(list_of_aligned_reads, gene_seq)
-        print("--------------------")
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -212,6 +163,5 @@ if __name__ == '__main__':
         sys.exit(1)
     all_genes = parse_sequences(sys.argv[1])
     all_reads = parse_sequences(sys.argv[2])
-    align_match(all_reads, all_genes)
-    align_substitution(all_reads, all_genes)
-    align_error(all_reads, all_genes)
+    align(all_reads, all_genes)
+    
